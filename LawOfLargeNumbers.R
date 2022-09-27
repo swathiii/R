@@ -3,7 +3,10 @@
 rm(counter)
 counter <- 0 
 for(i in rnorm(1000000)){
-  if(i >= -1 & i <= 1){
+  if(i >= -2 & i <= 2 ){
+    if(i>= -1 & i<= 1){
+      counter = counter - 1 
+    }
     counter = counter + 1
   }
 }
