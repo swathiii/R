@@ -15,3 +15,17 @@ rm(stats)
 stats <- read.csv("P2-Demographic-Data.csv")
 
 
+#------------EXPLORING DATASET----
+
+stats
+
+nrow(stats) #number of rows
+ncol(stats) #number of columns
+head(stats) #gives the top 6 rows
+tail(stats) #gives the bottom 6 rows
+
+head(stats, n=9) #gives the first 9 rows
+tail(stats, n=3)  #gives the bottom 3 rows
+
+str(stats) #gives the structure of the data frame
+summary(stats) #gives a breakdown for every column
