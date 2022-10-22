@@ -131,3 +131,92 @@ View(solution)
 
 mutate(mpg, hwyctyratio = hwy/cty) %>%
   select(manufacturer, hwyctyratio)
+
+
+#------------------combining datasets------------------------#
+
+install.packages("nycflights13")
+library(nycflights13)
+
+nycflights13::airlines
+
+# :: is the R way of identifying functions within a package, we can also view other datasets
+nycflights13::airports
+nycflights13::flights
+
+#dropping unimportant variables to make it easier to understand the join results
+flights2 <- flights %>% select(year:day, hour, origin, dest, tailnum, carrier)
+flights2
+
+#we will join flights2 with the airlines table using left_join()
+
+flights2 %>%
+  left_join(airlines, by="carrier")
+
+#left_join is an example of a mutating join
+#a mutating join allows you to combine variables from two tables. It first matches observations by their keys, then copies across variables from one table to the other.
+
+
+#----------------------working with real data---------------------#
+
+
+meals <- read_csv("freeschoolmeals.csv", col_types = "cciici")
+View(meals)
+
+#about the dataset: https://www.data.gov.uk/dataset/14b8a985-fc49-4d3e-947e-b4f12c9bf59b/free-school-meals
+#9999 is a fake value, cannot treat it as an actual value
+
+#to see the effects of missing data - NA
+summary(meals$FSMTaken)
+mean(meals$FSMTaken)
+#doesn't work as there are missing values, to counter this : 
+mean(meals$FSMTaken, na.rm=TRUE) 
+#na.rm=TRUE parameter says remove any NA values when computing the mean
+#the value is still very high as it considers 9999 as a real value
+
+length(meals$FSMTaken)
+
+actualFSMTaken <- meals$FSMTaken[meals$FSMTaken != 9999]
+length(actualFSMTaken) #we have 206/250 rows
+
+#using dplyr
+filter(meals, FSMTaken<9999)
+filter(meals, FSMTaken<9999) %>%
+  count() #we have 189/250 rows 
+
+#different bc filter also removed the data with NA values, to keep NA values :
+filter(meals, (FSMTaken<9999 | is.na(FSMTaken))) %>%
+  count()
+#this says filter and return values of FSMTaken that are less than 9999 OR where the value is NA
+
+#instead of ignoring NA, we can replace it with mean values, example: 
+y <- c(4, 5, 6, NA)
+is.na(y)
+
+y[is.na(y)] <- mean(y, na.rm=TRUE)
+y
+
+#to do this on our actualFSMTaken vector
+actualFSMTaken[is.na(actualFSMTaken)] <- floor(mean(actualFSMTaken, na.rm=TRUE))
+#the floor function is useful to transform the mean value from double to an integer so there is no mismatch over values
+
+#using dply to add a new column to the dataset instead of assigning the corrected value to a vector
+meals2 <- filter(meals, (FSMTaken<9999 | is.na(FSMTaken))) %>%
+  mutate(newFSMTaken=ifelse(is.na(FSMTaken), floor(mean(FSMTaken, na.rm=TRUE)), 
+                            FSMTaken)) #else use the original FSMTaken value
+
+View(meals2)
+
+#EXERCISE : consider the values 9999 to be 4 and calculate mean, do the same for 0
+#1) Value 4
+meals3 <- mutate(meals, newFSMTaken = ifelse(FSMTaken == 9999, 4,
+                                             FSMTaken))
+View(meals3)
+
+mean(meals3$newFSMTaken, na.rm=TRUE)
+#mean is 25.01388
+
+meals3 <- mutate(meals, newFSMTaken = ifelse(FSMTaken == 9999, 0,
+                                             FSMTaken))
+
+#mean is 24.25751
