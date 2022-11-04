@@ -338,7 +338,7 @@ iris[1:5,]
 #separate randomly into training and test data
 train_size = 0.7  #using 70% of data for training
 iris_train <- iris[1:(train_size*nrow(iris)),]
-iris_test <- iris[(nrow(iris_train)+1):nrow(iris),] #--------???-------explanation
+iris_test <- iris[(nrow(iris_train)+1):nrow(iris),]
 
 
 #Visualizing data for classification
@@ -470,10 +470,58 @@ iris_train[1:10,] #examining data to verify is binaryspecies label was set corre
 ?glm()
 
 #start by using petal length/width to predict the class
+binarySpecies = 'virginica'
+
 iris_binary_model <- glm(
-  binarySpecies ~ Petal.Width + Petal.Length, #predicting the binarySpecies label usig petal l/w
+  binarySpecies ~ Petal.Width + Petal.Length, #predicting the binarySpecies label using petal l/w
   family = binomial(link = 'logit'), #use a logistic regression
   data = iris_train
 )
 
 #officially trained my first machine learning model !!
+
+#---Testing and evaluating the logistic regression model---#
+binomial_probabilities <- predict(
+  iris_binary_model,
+  newdata = iris_test,
+  type = 'response'
+)
+
+print(binomial_probabilities)
+#these are the estimated probabilties that each sample is of species virginica, 
+#for evaluation purposed, now we need to convert these to discrete labels
+#which we'll do by binarizing at 0.5
+binomial_predictions <- ifelse(
+  binomial_probabilities > 0.5,
+  1,
+  0
+)
+
+print(binomial_predictions)
+
+#we can compare this to our discrete 0/1 true labels, we'll have to evaluate
+#the model by accuracy, which is the propotion of test samples where the model
+#made the right prediction 
+
+#first, converting the test set labels to binary, like we did for training set
+iris_test$binarySpecies <- iris_test$Species == 'virginica'
+iris_test$binarySpecies <- iris_test$binarySpecies * 1
+
+iris_test
+
+#now we calculate the error as the number of cases where we did not get the
+#right label, and the accuracy as 1 minus that
+
+binomial_classification_error <- mean(
+  binomial_predictions != iris_test$binarySpecies
+)
+
+print(paste('Accuracy', 1 - binomial_classification_error))
+
+
+test <- mean(
+  binomial_predictions != iris_test$binarySpecies
+)
+test2 <- print(paste(1 - binomial_classification_error))
+
+
