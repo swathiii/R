@@ -182,3 +182,44 @@ summary(model2_natfrest)
 #Multiple R-squared:  0.05526,	Adjusted R-squared:  0.05361
 #F-statistic: 33.38 on 3 and 1712 DF,  p-value: < 2.2e-16
 
+plot(
+  model_natfrest,
+  which = 1
+)
+
+#---making predictions ?
+
+#-----LOGISTIC REGRESSION---
+
+
+
+
+
+#--------VISUALIZATION-----------------------------
+
+#--------create a heatmap for SMNews and PartyId2
+#drop missing values
+#SMNews : negative values : -1, 98, 99
+#PartyId2 : negative values : -1, 8 
+
+data4 <- raw_data
+
+count(data4, vars = 'SMNews')
+count(data4, vars = 'PartyId2')
+
+#removing null values
+data4$SMNews[ data4$SMNews == 98 ] <- NA
+data4$PartyId2[ data4$PartyId2 == -1  ] <- NA
+data4$PartyId2[ data4$PartyId2 == 8 ] <- NA 
+
+data4 <- na.omit(data4)
+
+#the data frame has 2956 rows and 26 columns
+str(data4)
+
+
+data_viz <- data4[,12:13]
+head(data_viz)
+
+Newsmatrix <- data.matrix(data_viz)
+
