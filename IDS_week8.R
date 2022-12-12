@@ -151,6 +151,126 @@ install.packages('rgdal')
 library(tmap)
 library(rgdal)
 
+#rgdal package to help read shapefiles using readOCR() function
+#LSOA : lower-layer super output areas
 
 
+sheffieldShape <- readOGR( dsn = "./BoundaryData", layer = 'england_lsoa_2011')
+#dsn is the directory where shapefile can be found
+#layer is the name of shapefile - without the .shp extension
+
+head(sheffieldShape@data, n=2)
+
+head(sheffieldShape@polygons, n=1)
+
+qtm(sheffieldShape) #quick thematic map
+
+#--------MAKING THE PLOT INTERACTIVE-------------------
+
+tmap_mode('view')
+
+qtm(sheffieldShape)
+
+#change parameter to the qtm() to alter the appearance of the map
+#if you don't want the shapefile to appear dark, remove the FILL: 
+qtm(sheffieldShape, fill = NULL )
+
+#to turn off interactive mapping
+tmap_mode('plot')
+
+#-----COLOURING THE THEMATIC MAP--------------------
+
+#directly downloading file7 from URL using read.csv()
+deprivation2015 <- read.csv('https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/467774/File_7_ID_2015_All_ranks__deciles_and_scores_for_the_Indices_of_Deprivation__and_population_denominators.csv')
+
+View(deprivation2015)
+
+
+
+#selecting some of the columns to work with using select() from tidyverse
+library(tidyverse)
+
+deprivation2015pop <- deprivation2015 %>%
+  select(LSOA.name..2011.,
+         LSOA.code..2011.,
+         Total.population..mid.2012..excluding.prisoners.,
+         Dependent.Children.aged.0.15..mid.2012..excluding.prisoners.,
+         Population.aged.16.59..mid.2012..excluding.prisoners.,
+         Older.population.aged.60.and.over..mid.2012..excluding.prisoners.)
+
+#shortening the column names
+names(deprivation2015pop)[names(deprivation2015pop) == 'LSOA.name..2011.'] <- 'LSOA_name'
+names(deprivation2015pop)[names(deprivation2015pop) == 'LSOA.code..2011.'] <- 'LSOA_code'
+names(deprivation2015pop)[names(deprivation2015pop) == 'Total.population..mid.2012..excluding.prisoners.'] <- 'Total_population'
+names(deprivation2015pop)[names(deprivation2015pop) == 'Dependent.Children.aged.0.15..mid.2012..excluding.prisoners.'] <- 'Child_population'
+names(deprivation2015pop)[names(deprivation2015pop) == 'Population.aged.16.59..mid.2012..excluding.prisoners.'] <- 'MidAge_population'
+names(deprivation2015pop)[names(deprivation2015pop) == 'Older.population.aged.60.and.over..mid.2012..excluding.prisoners.'] <- 'Elderly_population' 
+
+head(deprivation2015pop)
+
+#joining the deprivation data frame to existing shapefile using left_join()
+sheffieldShape@data <- left_join( sheffieldShape@data, deprivation2015pop,
+                                  by = c( 'code' = 'LSOA_code'))
+
+#plotting the map to fill regions in Sheffield based on total population
+qtm(sheffieldShape, fill = 'Total_population')
+
+#using fuller map function for plotting data : tm_shape() function
+tm_shape(sheffieldShape) +
+  tm_fill('Elderly_population', style = 'kmeans', border.col = 'black') +
+  tm_borders( alpha = 0.5 ) #alpha controls transparency
+
+#adding alpha parameter to tm_fill() to make the fill transparent
+
+tmap_mode('view') #making the map interactive again
+
+tm_shape(sheffieldShape) +
+  tm_fill('Elderly_population', alpha = 0.5, style = 'kmeans', border.col = 'black') +
+  tm_borders(alpha = 0.5)
+
+#EXERCISE 
+#plot the same map for middle aged population
+View(sheffieldShape@data)
+tm_shape(sheffieldShape) +
+  tm_fill('MidAge_population', alpha = 0.5, style = 'kmeans', border.col = 'black') +
+  tm_borders(alpha = 0.5)
+
+
+#-----FURTHER REFINEMENTS-----------
+#we can add more layers since it's based on ggplot2
+
+sheffElderly <- tm_shape(sheffieldShape) +
+  tm_fill('Elderly_population', alpha = 0.5, 
+          style = 'kmeans', border.col = 'black') +
+  tm_borders(alpha = 0.5)
+
+#adding a scale bar to the plot using the tm_scale_bar()
+sheffElderly +
+  tm_scale_bar() #visible at the bottom right
+
+#adding a compass : set the map mode to plot then add tm_compass()
+tmap_mode('plot')
+
+sheffElderly +
+  tm_scale_bar() +
+  tm_compass( position = c('right', 'top'))
+
+#displaying multiple maps at once using tm_fill()
+tmap_mode('view')
+
+tm_shape(sheffieldShape) +
+  tm_fill( c('Total_population',
+             'Child_population',
+             'MidAge_population',
+             'Elderly_population'),
+           
+           title = c('Total population (mid 2012)',
+                     'Child population',
+                     'Adult population',
+                     'Elderly population'),
+           
+           convert2density = TRUE) +
+  tm_borders(alpha = 0.5)
+
+#PLOTTING CRIMES IN SHEFFIELD
 
