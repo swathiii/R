@@ -274,3 +274,51 @@ tm_shape(sheffieldShape) +
 
 #PLOTTING CRIMES IN SHEFFIELD
 
+crimes <- read.csv('2022-10-south-yorkshire-street.csv', header = TRUE)
+View(crimes)
+
+#viewing crimes by a specific LSOA code
+crimes %>%
+  filter( LSOA.code == 'E01007321')
+
+#we can count the number of crimes in each LSOA
+numCrimesbyLSOA <- crimes %>%
+  select( LSOA.code, LSOA.name, Crime.type) %>% #selecting the columns we're interested in
+  group_by(LSOA.code) %>% #grouping the data by LSOA code
+  summarise( Num.crimes = n() ) #countung the number of rows in eacy group using summarise
+#and creating a new variable called Num.crimes
+
+numCrimesbyLSOA
+
+#we join this data to the shape file by LSOA code using left_join()
+sheffieldShape@data <- left_join(sheffieldShape@data, numCrimesbyLSOA,
+                                 by = c( 'code' = 'LSOA.code' ))
+
+#plotting it using qtm() in interactive mode
+tmap_mode('view')
+
+tm_shape(sheffieldShape) +
+  tm_fill('Num.crimes', alpha = 0.5, 
+          style = 'kmeans', border.col = 'black') +
+  tm_borders(alpha = 0.5)
+
+#removing the missing data by assigning it a 0 value 
+sheffieldShape[ is.na(sheffieldShape@data$Num.crimes) ] <- 0
+tm_shape(sheffieldShape) +
+  tm_fill('Num.crimes', alpha = 0.5, style = 'kmeans', border.col = 'black') +
+  tm_borders(alpha = 0.5)
+
+
+#---VISUALISATION USING CARTOGRAMS------------------
+#cartograms distort a map based on variable
+
+install.packages('cartogram')
+library(cartogram)
+
+sheffCarto <- cartogram_cont(sheffieldShape, weight = 'Num.crimes', itermax =  10,
+                             prepare = 'adjust')
+
+tm_shape( sheffCarto ) +
+  tm_fill('Num.crimes', style = 'jenks', alpha = 0.5 ) +
+  tm_borders() +
+  tm_layout( frame = F )
